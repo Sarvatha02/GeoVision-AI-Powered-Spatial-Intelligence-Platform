@@ -1,164 +1,136 @@
-<p>
-  <img src="images/alkf-logo.png" width="140" align="left">
-</p>
+# GeoVision – AI-Powered Spatial Intelligence Platform
 
-<h1 style="margin-top:0;">AUTOMATED SPATIAL INTELLIGENCE SYSTEM API – ALKF+</h1>
-<hr>
+GeoVision is a modular spatial intelligence platform for automated site and urban-area assessment.
 
-> Modular geospatial intelligence platform for automated urban feasibility assessment. Converts raw geographic lot data into structured analytical maps and PDF reports via a cloud-deployed API.
+The platform accepts a land-lot reference, resolves its geographic location, performs multiple spatial analyses, generates analytical maps, and produces a consolidated PDF report through a FastAPI-based backend.
 
----
+The system combines geospatial datasets, OpenStreetMap information, spatial network analysis, environmental modelling, and automated visualization to provide a structured view of a site's surrounding environment.
 
-## Table of Contents
-
-1. [Quick Start](#quick-start)
-2. [System Architecture](#system-architecture)
-3. [Module Breakdown](#module-breakdown)
-4. [API Reference](#api-reference)
-5. [Deployment](#deployment)
-6. [Performance Profile](#performance-profile)
-7. [Sample Outputs](#sample-outputs)
-8. [Changelog](#changelog)
+> Note: The current implementation is primarily based on geospatial algorithms, GIS data, network analysis, and mathematical models. The "AI-Powered" name represents the project's intelligent automation direction; no standalone machine-learning model is currently documented as part of the core analysis pipeline.
 
 ---
 
-## Quick Start
+## Overview
 
-### Prerequisites
+A site's potential can depend on several surrounding factors, including accessibility, transportation, land use, infrastructure, visual surroundings, and environmental conditions.
 
-- Python 3.11+
-- pip
-- Git
+GeoVision brings these factors into a single automated workflow.
 
-### Installation
-
-```bash
-# Clone the repository
-git clone https://github.com/your-org/automated-site-analysis-api.git
-cd automated-site-analysis-api
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Start the development server
-uvicorn app:app --host 0.0.0.0 --port 10000 --reload
-```
-
-The API will be available at `http://localhost:10000`.
-
-### Environment Variables
-
-| Variable | Description | Required | Default |
-|----------|-------------|----------|---------|
-| `PORT` | Server port | No | `10000` |
-| `LOG_LEVEL` | Logging verbosity (`debug`, `info`, `warning`) | No | `info` |
-| `CACHE_ENABLED` | Enable in-memory result caching | No | `true` |
-| `DPI` | Output image resolution | No | `200` |
-
-### Your First Request
-
-```bash
-curl -X POST http://localhost:10000/walking \
-  -H "Content-Type: application/json" \
-  -d '{"lot_id": "IL 1657"}' \
-  --output walking_analysis.png
+```text
+                         LOT / SITE INPUT
+                                │
+                                ▼
+                     ┌─────────────────────┐
+                     │ Location Resolver   │
+                     └──────────┬──────────┘
+                                │
+                                ▼
+                       Geographic Location
+                                │
+              ┌─────────────────┼─────────────────┐
+              │                 │                 │
+              ▼                 ▼                 ▼
+          OSM Data          GIS Datasets      Spatial Data
+              │                 │                 │
+              └─────────────────┼─────────────────┘
+                                ▼
+                       Spatial Analysis Engine
+                                │
+       ┌────────────┬───────────┼───────────┬────────────┐
+       ▼            ▼           ▼           ▼            ▼
+    Walking      Driving    Transport    Context       View
+       │            │           │           │            │
+       └────────────┴───────────┴───────────┴────────────┘
+                                │
+                                ▼
+                       Noise Assessment
+                                │
+                                ▼
+                    Maps + Automated PDF Report
 ```
 
 ---
 
-## System Architecture
+# Key Capabilities
 
-### End-to-End Processing Flow
+### Site Resolution
+Convert a human-readable lot identifier into geographic coordinates suitable for spatial processing.
 
-```mermaid
-flowchart TD
+### Walking Accessibility
+Measure pedestrian reachability and proximity to important amenities.
 
-A[User Request - LOT ID] --> B[FastAPI Endpoint]
-B --> C[Government GIS Resolver API]
-C --> D[Coordinate Transformation EPSG 2326 → 4326 → 3857]
+### Driving Connectivity
+Analyse road-network accessibility using travel-time-based isochrones.
 
-D --> E[Data Layer]
+### Public Transport Analysis
+Evaluate nearby bus and rail infrastructure and calculate a transport accessibility score.
 
-E --> E1[Zoning Dataset]
-E --> E2[Building Height Dataset]
-E --> E3[OpenStreetMap Extraction]
+### Urban Context & Zoning
+Combine zoning, buildings, roads, green spaces, and amenities into a contextual spatial map.
 
-E --> F[Spatial Analysis Engine]
+### 360° View Analysis
+Classify the visual character surrounding a site into directional sectors.
 
-F --> F1[Walking Analysis]
-F --> F2[Driving Analysis]
-F --> F3[Transport Network]
-F --> F4[Context Mapping]
-F --> F5[View Sector Scoring]
-F --> F6[Noise Modelling]
+### Noise Assessment
+Estimate road traffic noise across the surrounding area using a grid-based propagation model.
 
-F --> G[Visualization Engine]
+### Automated Reporting
+Generate a multi-page PDF containing the complete site assessment.
 
-G --> H[PNG Output]
-G --> I[PDF Report Generator]
+---
 
-H --> J[Streaming Response]
-I --> J
-```
+# Technology Stack
 
-### Cloud Execution Flow
+## Backend
 
-```mermaid
-flowchart LR
+- Python
+- FastAPI
+- Uvicorn
+- REST APIs
 
-Client --> Render
-Render --> Uvicorn
-Uvicorn --> FastAPI
-FastAPI --> LoggingLayer
-FastAPI --> CacheLayer
-FastAPI --> Modules
-Modules --> GeoPandas
-Modules --> OSMnx
-Modules --> StaticDatasets
-FastAPI --> Output
-```
+## Geospatial Processing
 
-### Request Lifecycle
+- GeoPandas
+- Shapely
+- PyProj
+- OSMnx
+- NetworkX
+- Contextily
 
-```mermaid
-sequenceDiagram
-    participant Client
-    participant FastAPI
-    participant Cache
-    participant GIS Resolver
-    participant Analysis Engine
-    participant Visualizer
+## Data Processing
 
-    Client->>FastAPI: POST /walking { lot_id }
-    FastAPI->>Cache: Check lot_id cache
-    alt Cache Hit
-        Cache-->>FastAPI: Cached PNG
-        FastAPI-->>Client: 200 PNG (< 1s)
-    else Cache Miss
-        FastAPI->>GIS Resolver: Resolve lot_id → coordinates
-        GIS Resolver-->>FastAPI: EPSG:2326 coordinates
-        FastAPI->>Analysis Engine: Run spatial analysis
-        Analysis Engine-->>FastAPI: GeoDataFrames + metrics
-        FastAPI->>Visualizer: Render map
-        Visualizer-->>FastAPI: PNG buffer
-        FastAPI->>Cache: Store result
-        FastAPI-->>Client: 200 PNG (5–10s)
-    end
-```
+- NumPy
+- Pandas
+- Scikit-learn
 
-### Repository Structure
+## Visualization & Reporting
 
-```
-Automated-Site-Analysis-API/
+- Matplotlib
+- ReportLab
+
+## Data Sources
+
+- OpenStreetMap
+- Government GIS services
+- GeoPackage datasets
+
+The documented requirements include FastAPI, Uvicorn, GeoPandas, OSMnx, Contextily, Shapely, PyProj, NetworkX, NumPy, Pandas, Matplotlib, Requests, Scikit-learn, and ReportLab.
+
+---
+
+# Project Architecture
+
+```text
+GeoVision/
 │
-├── app.py                    # FastAPI entrypoint, route definitions, cache + logging init
-├── render.yaml               # Render cloud deployment config
+├── app.py
 ├── requirements.txt
 ├── runtime.txt
+├── render.yaml
 │
 ├── data/
-│   ├── BUILDINGS_FINAL.gpkg  # Optimized building footprint dataset (42k rows, EPSG:3857)
-│   └── ZONE_REDUCED.gpkg     # Zoning dataset (reduced attributes, EPSG:3857)
+│   ├── BUILDINGS_FINAL.gpkg
+│   └── ZONE_REDUCED.gpkg
 │
 ├── images/
 │   └── alkf-logo.png
@@ -167,189 +139,279 @@ Automated-Site-Analysis-API/
 │   └── HK_MTR_logo.png
 │
 └── modules/
-    ├── context.py            # Land-use and amenity mapping
-    ├── driving.py            # Vehicular isochrone analysis
-    ├── noise.py              # Road traffic noise propagation
-    ├── resolver.py           # LOT ID → coordinate resolution
-    ├── transport.py          # Public transit accessibility
-    ├── view.py               # 360° view sector classification
-    └── walking.py            # Pedestrian network analysis
+    ├── resolver.py
+    ├── walking.py
+    ├── driving.py
+    ├── transport.py
+    ├── context.py
+    ├── view.py
+    └── noise.py
 ```
 
----
-
-## Module Breakdown
-
-### `resolver.py` — Multi-Type Input Resolver
-
-Translates a human-readable lot identifier (e.g. `IL 1657`) into usable spatial coordinates via the government GIS API.
-
-**Transformation pipeline:**
-1. POST lot ID to Government GIS Resolver API
-2. Receive raw EPSG:2326 (Hong Kong Grid) coordinates
-3. Reproject → EPSG:4326 (WGS84) for OSM queries
-4. Reproject → EPSG:3857 (Web Mercator) for internal spatial analysis
-
-**Error handling:** Returns `422 Unprocessable Entity` if the lot ID cannot be resolved (invalid format, unknown lot).
+Each analysis capability is separated into its own module, while `app.py` acts as the FastAPI application entry point and route layer.
 
 ---
 
-### `walking.py` — Pedestrian Accessibility Analysis
+# Spatial Analysis Modules
 
-Evaluates walkability and proximity to amenities from the site centroid.
+## 1. Location Resolver
 
-**Method:**
-1. Extract walk graph from OSMnx within a configurable radius (default: 1,200 m)
-2. Snap lot centroid to nearest node
-3. Run Dijkstra shortest-path routing to all reachable amenity nodes
-4. Classify amenities by type (food, health, education, retail, recreation)
-5. Generate 5-minute and 10-minute isochrone buffers
-6. Render choropleth map with amenity cluster overlays
+The resolver converts a lot identifier such as:
 
-**Key parameters:**
-
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| Walk speed | 1.39 m/s | Standard pedestrian speed (5 km/h) |
-| Graph radius | 1,200 m | OSMnx extraction radius |
-| Time thresholds | 5 min, 10 min | Isochrone bands |
-
----
-
-### `driving.py` — Vehicular Connectivity Analysis
-
-Assesses road network reach and efficiency from the site.
-
-**Method:**
-1. Extract drive-mode graph from OSMnx
-2. Assign travel-time weights to edges based on posted speed limits
-3. Compute isochrones at 5, 10, and 20-minute thresholds
-4. Calculate betweenness centrality to identify key road corridors
-
-**Output:** Isochrone polygon map overlaid on a contextual basemap with centrality heatmap.
-
----
-
-### `transport.py` — Public Transit Accessibility
-
-Scores the site's proximity to and density of public transit infrastructure.
-
-**Method:**
-1. Query OSM for bus stops and MTR/rail stations within 800 m
-2. Compute transit node density per unit area
-3. Score route diversity (number of distinct routes within walking distance)
-4. Render node markers scaled by route count
-
-**Scoring:**
-
-```
-Transit Score = 0.5 × (node_density_norm) + 0.5 × (route_diversity_norm)
+```text
+IL 1657
 ```
 
----
+into geographic coordinates.
 
-### `context.py` — Land-Use & Zoning Mapping
+### Processing Flow
 
-Provides a spatial overview of the surrounding land-use environment.
-
-**Layers rendered:**
-- Zoning overlay (from `ZONE_REDUCED.gpkg`)
-- Amenity point distribution (OSM)
-- Green space polygons (parks, recreational areas)
-- Building footprint density heatmap
-- Road network classification (motorway → footway)
-
----
-
-### `view.py` — 360° View Classification Engine
-
-Classifies the visual environment from the site across all directions.
-
-**Methodology:**
-
-1. Divide 360° into N equal sectors (default: 36 × 10° sectors)
-2. For each sector, extract:
-   - **Green ratio** — proportion of OSM green space within sightlines
-   - **Water ratio** — proportion of water bodies within sightlines
-   - **Building density** — count of building footprints
-   - **Average building height** — from `HEIGHT_M` field in `BUILDINGS_FINAL.gpkg`
-3. Normalize all features to [0, 1]
-4. Apply composite scoring model (see below)
-5. Merge adjacent sectors sharing the same dominant view type
-
-**Scoring Model:**
-
-```
-Green Score  = green_ratio
-Water Score  = water_ratio
-City Score   = height_norm × density_norm
-Open Score   = (1 - density_norm) × (1 - height_norm)
+```text
+Lot Identifier
+      ↓
+Government GIS Resolver
+      ↓
+Raw Spatial Coordinates
+      ↓
+EPSG:4326
+      ↓
+EPSG:3857
 ```
 
-Each sector is labelled with the highest-scoring view type:
-
-| Label | Condition |
-|-------|-----------|
-| `GREEN VIEW` | Dominant green_ratio |
-| `WATER VIEW` | Dominant water_ratio |
-| `CITY VIEW` | High density + high height |
-| `OPEN VIEW` | Low density + low height |
-
-**Output:** Polar sector diagram with colour-coded view classifications.
+The documented implementation receives source coordinates in EPSG:2326, transforms them to EPSG:4326 for OpenStreetMap queries, and then to EPSG:3857 for internal spatial processing.
 
 ---
 
-### `noise.py` — Road Traffic Noise Propagation Model
+## 2. Walking Accessibility
 
-Simulates noise levels across the surrounding area based on road type and traffic volume.
+The walking module evaluates pedestrian accessibility from the selected site.
 
-**Base propagation model:**
+### Workflow
 
+```text
+Site Centroid
+     ↓
+Pedestrian Network Extraction
+     ↓
+Nearest Network Node
+     ↓
+Shortest-Path Analysis
+     ↓
+Amenity Identification
+     ↓
+Accessibility Zones
+     ↓
+Map Generation
 ```
+
+The implementation uses OSMnx to obtain a walking network, snaps the site to a nearby network node, calculates shortest paths, categorizes amenities, and generates 5-minute and 10-minute accessibility areas.
+
+### Amenity Categories
+
+- Food
+- Healthcare
+- Education
+- Retail
+- Recreation
+
+Default parameters documented in the project include a 1,200 m graph radius and a walking speed of 1.39 m/s.
+
+---
+
+## 3. Driving Connectivity
+
+The driving module evaluates road accessibility from the selected site.
+
+### Analysis
+
+- Build a driving network using OSMnx
+- Assign travel-time weights to road segments
+- Generate drive-time isochrones
+- Calculate road-network betweenness centrality
+- Visualize important road corridors
+
+### Accessibility Levels
+
+```text
+5 minutes
+10 minutes
+20 minutes
+```
+
+The resulting visualization contains accessibility polygons together with a contextual road-network and centrality representation.
+
+---
+
+## 4. Public Transport Accessibility
+
+The transport module evaluates the availability of public transportation around the site.
+
+It considers:
+
+- Bus stops
+- Rail stations
+- MTR infrastructure
+- Transit-node density
+- Route diversity
+
+The documented transport score is calculated as:
+
+```text
+Transit Score =
+0.5 × Normalized Node Density
++
+0.5 × Normalized Route Diversity
+```
+
+Transit nodes are displayed with visual emphasis based on route information.
+
+---
+
+## 5. Context & Zoning
+
+The context module provides a spatial overview of the site's surrounding urban environment.
+
+### Included Layers
+
+```text
+Zoning
+Building Footprints
+Road Network
+Green Spaces
+Amenities
+Building Density
+```
+
+Zoning is taken from the local zoning GeoPackage, while amenities and other geographic context can be derived from OpenStreetMap.
+
+---
+
+## 6. 360° View Classification
+
+GeoVision divides the area surrounding a site into directional sectors to characterize its surrounding environment.
+
+The documented default configuration uses:
+
+```text
+36 sectors
+10° per sector
+```
+
+Each sector considers:
+
+- Green-space proportion
+- Water presence
+- Building density
+- Average building height
+
+The features are normalized and combined to determine the dominant view category.
+
+### View Categories
+
+| Category | Interpretation |
+|---|---|
+| GREEN VIEW | Strong green-area presence |
+| WATER VIEW | Dominant water features |
+| CITY VIEW | Higher building density and height |
+| OPEN VIEW | Lower building density and height |
+
+The scoring logic documented by the project is:
+
+```text
+Green Score = Green Ratio
+
+Water Score = Water Ratio
+
+City Score = Height × Density
+
+Open Score = (1 - Density) × (1 - Height)
+```
+
+Each sector receives the classification with the highest score.
+
+---
+
+## 7. Road Traffic Noise Analysis
+
+The noise module estimates how road traffic noise propagates around the selected site.
+
+### Base Model
+
+```text
 L = L₀ − 20 log₁₀(r)
 ```
 
 Where:
-- `L₀` — Source emission level (dB), assigned per road class
-- `r` — Distance from source (m)
 
-**Source emission levels by road class:**
+```text
+L₀ = source emission level
+r  = distance from the source
+```
 
-| Road Class | L₀ (dB) |
-|------------|---------|
-| Motorway | 78 |
-| Primary | 72 |
-| Secondary | 68 |
-| Tertiary | 64 |
-| Residential | 58 |
+### Road Source Levels
 
-**Extended correction factors:**
-- **Heavy vehicle correction** — +3 dB for motorway/primary roads
-- **Barrier attenuation** — building mass reduces propagation across facades
-- **Ground absorption** — soft ground surfaces reduce propagation by up to 3 dB
-- **Reflection adjustment** — hard surfaces (streets, plazas) add +1–2 dB
+| Road Class | Source Level |
+|---|---:|
+| Motorway | 78 dB |
+| Primary | 72 dB |
+| Secondary | 68 dB |
+| Tertiary | 64 dB |
+| Residential | 58 dB |
 
-**Output:** 50 m × 50 m grid-based noise heatmap (dB scale) with road network overlay.
+The model also applies corrections related to heavy vehicles, building barriers, ground absorption, and reflections. The final result is represented as a 50 m × 50 m grid-based noise heatmap.
 
 ---
 
-## API Reference
+# Automated PDF Report
 
-### Base URL
+The `/report` endpoint combines the individual analyses into one PDF document.
 
+### Report Structure
+
+```text
+1. Cover / Site Information
+2. Context & Zoning
+3. Walking Accessibility
+4. Driving Analysis
+5. Public Transport
+6. 360° View Classification
+7. Noise Assessment
 ```
+
+The documented report is generated as a seven-page PDF including the cover page.
+
+---
+
+# REST API
+
+## Base URL
+
+```text
 https://automated-site-analysis-api.onrender.com
 ```
 
-### Authentication
+The project documentation identifies this as the deployed API endpoint.
 
-No authentication required (current version). See [Future Enhancements](#future-enhancements) for planned auth layer.
+## Endpoints
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/` | API status |
+| GET | `/search` | Location / lot search |
+| GET | `/lot-boundary` | Site boundary retrieval |
+| POST | `/walking` | Walking accessibility analysis |
+| POST | `/driving` | Driving accessibility analysis |
+| POST | `/transport` | Public transport analysis |
+| POST | `/context` | Context and zoning analysis |
+| POST | `/view` | 360° view classification |
+| POST | `/noise` | Noise propagation analysis |
+| POST | `/report` | Complete PDF report |
+
+The documented POST analysis routes return PNG images, while `/report` returns a PDF stream.
 
 ---
 
-### Request Format
-
-All endpoints accept `POST` with `Content-Type: application/json`.
+# Example Request
 
 ```json
 {
@@ -357,122 +419,35 @@ All endpoints accept `POST` with `Content-Type: application/json`.
 }
 ```
 
-**Lot ID formats accepted:**
-
-| Format | Example |
-|--------|---------|
-| Inland Lot | `IL 1657` |
-| New Kowloon Inland Lot | `NKIL 6304` |
-| New Territories Lot | `DD 123 LOT 456` |
-
----
-
-### Endpoints
-
-#### `POST /walking`
-
-Returns a pedestrian accessibility map.
-
-**Request:**
-```json
-{ "lot_id": "IL 1657" }
-```
-
-**Response:** `200 OK` — PNG image stream (`Content-Type: image/png`)
-
-**Errors:**
-
-| Code | Reason |
-|------|--------|
-| `422` | Invalid or unresolvable lot ID |
-| `500` | OSMnx graph extraction failed (network timeout or empty graph) |
-| `503` | Government GIS API unavailable |
-
----
-
-#### `POST /driving`
-
-Returns a vehicular isochrone map.
-
-**Response:** `200 OK` — PNG image stream
-
----
-
-#### `POST /transport`
-
-Returns a public transit accessibility map with scored bus/rail nodes.
-
-**Response:** `200 OK` — PNG image stream
-
----
-
-#### `POST /context`
-
-Returns a land-use context map with zoning and amenity overlays.
-
-**Response:** `200 OK` — PNG image stream
-
----
-
-#### `POST /view`
-
-Returns a 360° polar view classification diagram.
-
-**Response:** `200 OK` — PNG image stream
-
----
-
-#### `POST /noise`
-
-Returns a grid-based road noise propagation heatmap.
-
-**Response:** `200 OK` — PNG image stream
-
----
-
-#### `POST /report`
-
-Generates a combined multi-page PDF report containing all six analyses.
-
-**Response:** `200 OK` — PDF stream (`Content-Type: application/pdf`)
-
-**Report page order:**
-1. Cover page (lot ID, coordinates, generation timestamp)
-2. Context & Zoning map
-3. Walking Accessibility map
-4. Driving Isochrone map
-5. Transport Accessibility map
-6. View Classification diagram
-7. Noise Propagation map
-
----
-
-### Example: Full curl Workflow
+### Walking Analysis
 
 ```bash
-BASE="https://automated-site-analysis-api.onrender.com"
-LOT='{"lot_id": "IL 1657"}'
-
-# Download all individual maps
-curl -s -X POST $BASE/walking  -H "Content-Type: application/json" -d $LOT -o walking.png
-curl -s -X POST $BASE/driving  -H "Content-Type: application/json" -d $LOT -o driving.png
-curl -s -X POST $BASE/transport -H "Content-Type: application/json" -d $LOT -o transport.png
-curl -s -X POST $BASE/context  -H "Content-Type: application/json" -d $LOT -o context.png
-curl -s -X POST $BASE/view     -H "Content-Type: application/json" -d $LOT -o view.png
-curl -s -X POST $BASE/noise    -H "Content-Type: application/json" -d $LOT -o noise.png
-
-# Download full PDF report
-curl -s -X POST $BASE/report   -H "Content-Type: application/json" -d $LOT -o report.pdf
+curl -X POST https://automated-site-analysis-api.onrender.com/walking \
+  -H "Content-Type: application/json" \
+  -d '{"lot_id":"IL 1657"}' \
+  -o walking.png
 ```
+
+### Complete Site Report
+
+```bash
+curl -X POST https://automated-site-analysis-api.onrender.com/report \
+  -H "Content-Type: application/json" \
+  -d '{"lot_id":"IL 1657"}' \
+  -o site-report.pdf
+```
+
+The repository documentation provides the same API workflow for the individual analysis endpoints and the combined report endpoint.
 
 ---
 
-### Example: Python Client
+# Python Client
 
 ```python
 import requests
 
 BASE_URL = "https://automated-site-analysis-api.onrender.com"
+
 
 def fetch_analysis(endpoint: str, lot_id: str, output_path: str):
     response = requests.post(
@@ -480,203 +455,202 @@ def fetch_analysis(endpoint: str, lot_id: str, output_path: str):
         json={"lot_id": lot_id},
         timeout=30
     )
+
     response.raise_for_status()
-    with open(output_path, "wb") as f:
-        f.write(response.content)
 
-# Fetch walking map for lot IL 1657
-fetch_analysis("walking", "IL 1657", "walking.png")
+    with open(output_path, "wb") as file:
+        file.write(response.content)
 
-# Fetch full PDF report
-fetch_analysis("report", "IL 1657", "report.pdf")
+
+# Generate walking analysis
+fetch_analysis(
+    "walking",
+    "IL 1657",
+    "walking.png"
+)
+
+# Generate complete report
+fetch_analysis(
+    "report",
+    "IL 1657",
+    "site-report.pdf"
+)
 ```
 
 ---
 
-## Deployment
+# Local Setup
 
-### Render (Cloud — Recommended)
+## Prerequisites
 
-The project is pre-configured for [Render](https://render.com) via `render.yaml`.
-
-```yaml
-services:
-  - type: web
-    name: automated-site-analysis-api
-    runtime: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn app:app --host 0.0.0.0 --port 10000
-    plan: free
-    autoDeploy: true
+```text
+Python 3.11+
+pip
+Git
 ```
 
-**Steps:**
-1. Fork this repository
-2. Connect your fork to Render via the dashboard
-3. Render will detect `render.yaml` and configure automatically
-4. Deploy — the service URL will appear in the Render dashboard
-
-**Environment variables on Render:**
-Set these in the Render dashboard under **Environment → Environment Variables**:
-
-| Variable | Value |
-|----------|-------|
-| `PYTHON_VERSION` | `3.11.0` |
-| `LOG_LEVEL` | `info` |
-
----
-
-### Local Development
+## Installation
 
 ```bash
-# Install dependencies
+git clone https://github.com/your-username/GeoVision-AI-Powered-Spatial-Intelligence-Platform.git
+
+cd GeoVision-AI-Powered-Spatial-Intelligence-Platform
+
 pip install -r requirements.txt
-
-# Run with hot reload
-uvicorn app:app --host 0.0.0.0 --port 10000 --reload
-
-# Run without reload (production-like)
-uvicorn app:app --host 0.0.0.0 --port 10000
 ```
 
----
-
-### Docker (Optional)
-
-```dockerfile
-FROM python:3.11-slim
-
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-COPY . .
-
-EXPOSE 10000
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "10000"]
-```
+## Start the Development Server
 
 ```bash
-docker build -t alkf-api .
-docker run -p 10000:10000 alkf-api
+uvicorn app:app --host 0.0.0.0 --port 10000 --reload
 ```
 
----
+The local API runs on:
 
-### Troubleshooting
-
-**Cold start is slow (10–15s)**
-This is expected on Render's free plan. The first request after an idle period triggers dataset preloading. Subsequent requests are 5–10s; cached requests are < 1s.
-
-**`OSMnx` graph is empty / `InsufficientResponseError`**
-The lot may be in an area with limited OSM road coverage, or the OSMnx API request timed out. Retry or reduce the extraction radius via the `DPI` env var workaround.
-
-**`422 Unprocessable Entity`**
-The lot ID format was not recognised or the Government GIS API returned no results. Verify the lot ID string matches one of the accepted formats.
-
-**Port conflict on local**
-Change the port: `uvicorn app:app --port 8080`
-
----
-
-## Performance Profile
-
-| Scenario | Response Time |
-|----------|--------------|
-| Cold start (first request after idle) | 10–15 sec |
-| Normal request (warm server) | 5–10 sec |
-| Cached request (same lot ID repeated) | < 1 sec |
-
-### Optimization Details
-
-- **Dataset reduction** — Buildings reduced from 342,000+ → 42,000 rows by stripping unused attributes and precomputing `HEIGHT_M`
-- **CRS standardization** — All datasets converted to EPSG:3857 at build time to avoid per-request reprojection
-- **Startup preloading** — `.gpkg` files loaded once at API initialization, not per request
-- **In-memory caching** — Results keyed by `lot_id` string; invalidated on server restart
-- **DPI reduction** — Output images rendered at 200 DPI (down from 400) for faster encoding and smaller payloads
-
----
-
-## Sample Outputs
-
-> All outputs below generated for lot `IL 1657`.
-
-| Analysis | Output |
-|----------|--------|
-| Walking Accessibility | Pedestrian isochrone map with amenity cluster markers |
-| Driving Isochrone | 5/10/20-min drive-time polygons with centrality heatmap |
-| Transport Network | Bus stop and MTR node map scored by route count |
-| Context & Zoning | Zoning overlay with green space and amenity distribution |
-| 360° View Classification | Polar sector diagram (GREEN / WATER / CITY / OPEN) |
-| Noise Propagation | 50m grid heatmap in dB with road type overlay |
-| PDF Report | 7-page combined report with cover page |
-
----
-
-## Implementation Stages
-
-| Stage | Description | Status |
-|--------|------------|--------|
-| 1 | Multi-Type Input Resolver | ✅ Complete |
-| 2 | OSM Data Integration | ✅ Complete |
-| 3 | Network Graph Engine | ✅ Complete |
-| 4 | View Sector Model | ✅ Complete |
-| 5 | Noise Propagation Model | ✅ Complete |
-| 6 | Visualization Pipeline | ✅ Complete |
-| 7 | Dataset Optimization | ✅ Complete |
-| 8 | Modular API Refactor | ✅ Complete |
-| 9 | Render Cloud Deployment | ✅ Complete |
-| 10 | Caching & Logging Layer | ✅ Complete |
-| 11 | PDF Report Generator | ✅ Complete |
-
----
-
-## Future Enhancements
-
-- API key authentication + rate limiting
-- Batch multi-lot processing endpoint
-- Background job queue (Celery + Redis) for long-running reports
-- Persistent cloud storage for generated assets (S3 / GCS)
-- SaaS dashboard frontend (React + Mapbox GL)
-- Scalable deployment on Render paid tier or AWS ECS
-
----
-
-## Requirements
-
-```
-fastapi
-uvicorn
-geopandas
-osmnx
-contextily
-shapely
-pyproj
-networkx
-numpy
-pandas
-matplotlib
-requests
-scikit-learn
-reportlab
+```text
+http://localhost:10000
 ```
 
----
+Swagger documentation is available at:
 
-## Changelog
+```text
+http://localhost:10000/docs
+```
 
-### v1.1.0
-- Added PDF report generator (`/report` endpoint) with 7-page output
-- Added in-memory caching layer — repeated lot requests now return in < 1s
-- Added structured logging layer with request tracing
-
-### v1.0.0
-- Initial release with six analysis modules: walking, driving, transport, context, view, noise
-- Render cloud deployment via `render.yaml`
-- Building dataset optimized from 342k → 42k rows
-- CRS standardized to EPSG:3857 across all datasets
-- DPI reduced from 400 → 200 for web-optimized output
+The uploaded project specifies Python 3.11+, pip, Git, and Uvicorn for local development.
 
 ---
 
-© ALKF – Automated Geospatial Intelligence System
+# Deployment
+
+The project is configured for deployment on Render through `render.yaml`.
+
+### Deployment Configuration
+
+```text
+Runtime: Python
+Build Command: pip install -r requirements.txt
+Start Command: uvicorn app:app --host 0.0.0.0 --port 10000
+```
+
+The repository documentation also provides a Docker-based deployment option using Python 3.11.
+
+---
+
+# Performance Optimization
+
+Several optimizations are included in the implementation.
+
+### Dataset Reduction
+
+The building dataset was reduced from more than 342,000 records to approximately 42,000 records by removing unnecessary attributes and preparing height information in advance.
+
+### CRS Standardization
+
+Datasets are prepared in EPSG:3857 to reduce repeated coordinate transformations during requests.
+
+### Startup Preloading
+
+GeoPackage datasets are loaded during API startup instead of being reloaded for every request.
+
+### In-Memory Caching
+
+Repeated requests for the same lot can reuse previously generated results.
+
+### Output Optimization
+
+Visualization output uses 200 DPI rather than the previous 400 DPI configuration to reduce processing and response size.
+
+### Approximate Response Profile
+
+| Request Type | Typical Time |
+|---|---:|
+| Cold Start | 10–15 sec |
+| Warm Request | 5–10 sec |
+| Cached Request | < 1 sec |
+
+These timings are documented as the project's observed performance profile.
+
+---
+
+# Error Responses
+
+| Status Code | Description |
+|---|---|
+| `200` | Analysis completed successfully |
+| `422` | Invalid or unresolved lot identifier |
+| `500` | Spatial processing or OSM extraction failure |
+| `503` | Government GIS service unavailable |
+
+The project documents these response conditions for the API.
+
+---
+
+# Project Status
+
+## Implemented
+
+```text
+✓ Lot / Site Resolution
+✓ OpenStreetMap Integration
+✓ Pedestrian Network Analysis
+✓ Driving Network Analysis
+✓ Public Transport Analysis
+✓ Context & Zoning Mapping
+✓ 360° View Classification
+✓ Noise Propagation Modelling
+✓ Spatial Visualization
+✓ PDF Report Generation
+✓ Dataset Optimization
+✓ In-Memory Caching
+✓ Structured Logging
+✓ Render Deployment
+```
+
+The source project documents these capabilities as completed implementation stages.
+
+---
+
+# Future Enhancements
+
+Planned improvements include:
+
+- API authentication
+- Rate limiting
+- Batch processing of multiple sites
+- Background processing for long-running reports
+- Persistent cloud storage
+- React-based interactive dashboard
+- Mapbox-based visualization
+- Scalable cloud deployment
+
+These are listed as future enhancements in the source project.
+
+---
+
+# What This Project Demonstrates
+
+GeoVision brings together several areas of software and spatial engineering:
+
+```text
+Python Backend Development
+          +
+REST API Design
+          +
+GIS Data Processing
+          +
+Geospatial Computing
+          +
+Network Graph Analysis
+          +
+Spatial Visualization
+          +
+Environmental Modelling
+          +
+Automated Report Generation
+          ↓
+     GeoVision Platform
+```
+
+The modular design makes it possible to add additional spatial-analysis capabilities without redesigning the complete backend.
+
